@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import { DocumentUpload } from './DocumentUpload';
 import { ContractEditor } from './ContractEditor';
 import { TemplateLibrary } from './TemplateLibrary';
@@ -28,6 +29,7 @@ interface ContractVersion {
 }
 
 export const ContractCopilot = () => {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -45,6 +47,33 @@ export const ContractCopilot = () => {
     { id: '2', name: 'Service Agreement (Local)', type: 'local', lastModified: new Date(), status: 'draft' },
   ]);
 
+  // AI Response Generator
+  const generateAIResponse = (userInput: string): string => {
+    const lowerInput = userInput.toLowerCase();
+    
+    if (lowerInput.includes('create') || lowerInput.includes('new contract')) {
+      return "I'll help you create a new contract. Based on your requirements, I recommend starting with our Oil & Gas Service Agreement template. I've identified the following sections that need your attention:\n\n• **Parties Section**: Please specify the client name and complete address\n• **Scope of Work**: Define specific deliverables and timeline\n• **Payment Terms**: Set the contract value and payment schedule\n• **HSE Compliance**: Review safety requirements\n\nWould you like me to auto-populate standard clauses or would you prefer to customize each section?";
+    }
+    
+    if (lowerInput.includes('review') || lowerInput.includes('check')) {
+      return "I've analyzed your contract and found 3 items requiring attention:\n\n**🔴 Critical Issues:**\n• Missing contract execution date in Section 1\n• Payment amount placeholder not filled ($[AMOUNT])\n\n**🟡 Recommendations:**\n• Consider adding force majeure clause\n• Specify dispute resolution mechanism\n• Add intellectual property rights section\n\nI can automatically fix the formatting issues and suggest standard language for the missing clauses. Shall I proceed?";
+    }
+    
+    if (lowerInput.includes('error') || lowerInput.includes('scan')) {
+      return "Scanning complete! Found 2 errors and 3 optimization opportunities:\n\n**Errors:**\n• Inconsistent date format in Section 2.1\n• Missing signature block\n\n**Optimizations:**\n• Simplify payment terms language\n• Add automatic renewal clause\n• Include termination procedures\n\nWould you like me to fix these automatically or review each one individually?";
+    }
+    
+    if (lowerInput.includes('template')) {
+      return "I have 12 contract templates available for Aramco Digital projects:\n\n**Most Popular:**\n• Oil & Gas Service Agreement (Advanced)\n• Digital Transformation Consulting (Intermediate)\n• Equipment Maintenance Contract (Intermediate)\n• Non-Disclosure Agreement (Simple)\n\nEach template includes pre-filled standard clauses and highlights sections requiring customization. Which type of contract are you working on?";
+    }
+    
+    if (lowerInput.includes('upload') || lowerInput.includes('document')) {
+      return "Perfect! Once you upload your document, I'll:\n\n1. **Extract key information** (parties, terms, dates)\n2. **Identify missing sections** that need completion\n3. **Highlight areas** requiring legal review\n4. **Suggest improvements** based on Aramco standards\n5. **Check compliance** with company policies\n\nSupported formats: PDF, DOC, DOCX, TXT. You can drag and drop or click to select files.";
+    }
+    
+    return "I understand you're working on contract development. I can assist with:\n\n• **Contract Creation** - From templates or scratch\n• **Document Review** - Error checking and recommendations\n• **Compliance Verification** - Against Aramco standards\n• **Version Management** - Track changes between main and local copies\n• **Auto-completion** - Fill standard clauses and terms\n\nWhat specific task would you like help with today?";
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -56,19 +85,40 @@ export const ContractCopilot = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsTyping(true);
 
+    // Simulate AI processing time
     setTimeout(() => {
+      const aiResponse = generateAIResponse(currentInput);
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: "I'll help you with that contract. I've identified several sections that need your attention and highlighted areas requiring specific information. Would you like me to scan for potential errors or provide recommendations for improvements?",
+        content: aiResponse,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
       setIsTyping(false);
-    }, 2000);
+    }, 1500);
+  };
+
+  const handleQuickAction = (action: string) => {
+    const actionMessages = {
+      'scan': 'Please scan my contract for errors and compliance issues.',
+      'recommendations': 'What recommendations do you have for improving this contract?',
+      'checklist': 'Show me the review checklist for this contract type.'
+    };
+    
+    setInputValue(actionMessages[action as keyof typeof actionMessages] || '');
+  };
+
+  const handleNewContract = () => {
+    toast({
+      title: "New Contract",
+      description: "Starting new contract creation process...",
+    });
+    setActiveTab('templates');
   };
 
   return (
@@ -86,12 +136,19 @@ export const ContractCopilot = () => {
             </div>
           </div>
           
-          <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white mb-3">
+          <Button 
+            onClick={handleNewContract}
+            className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white mb-3"
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Contract
           </Button>
           
-          <Button variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-800">
+          <Button 
+            variant="outline" 
+            onClick={() => setActiveTab('chat')}
+            className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
+          >
             <Upload className="w-4 h-4 mr-2" />
             Upload Document
           </Button>
@@ -133,15 +190,27 @@ export const ContractCopilot = () => {
             <div>
               <h3 className="text-sm font-semibold text-slate-300 mb-3">Quick Actions</h3>
               <div className="space-y-2">
-                <Button variant="ghost" className="w-full justify-start text-slate-300 hover:bg-slate-800">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleQuickAction('scan')}
+                  className="w-full justify-start text-slate-300 hover:bg-slate-800"
+                >
                   <AlertTriangle className="w-4 h-4 mr-3 text-yellow-500" />
                   Scan for Errors
                 </Button>
-                <Button variant="ghost" className="w-full justify-start text-slate-300 hover:bg-slate-800">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleQuickAction('recommendations')}
+                  className="w-full justify-start text-slate-300 hover:bg-slate-800"
+                >
                   <Zap className="w-4 h-4 mr-3 text-green-500" />
                   Recommendations
                 </Button>
-                <Button variant="ghost" className="w-full justify-start text-slate-300 hover:bg-slate-800">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleQuickAction('checklist')}
+                  className="w-full justify-start text-slate-300 hover:bg-slate-800"
+                >
                   <CheckCircle className="w-4 h-4 mr-3 text-blue-500" />
                   Review Checklist
                 </Button>
@@ -203,9 +272,9 @@ export const ContractCopilot = () => {
                         ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white border-none' 
                         : 'bg-slate-800 border-slate-700 text-slate-200'
                       }`}>
-                        <p>
+                        <div className="whitespace-pre-line">
                           {message.content}
-                        </p>
+                        </div>
                         <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-green-100' : 'text-slate-500'}`}>
                           {message.timestamp.toLocaleTimeString()}
                         </p>

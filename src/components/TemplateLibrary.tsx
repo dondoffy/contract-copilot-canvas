@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { FileText, Star, Search, Filter, Eye, Download } from 'lucide-react';
+import { FileText, Star, Search, Filter, Eye, Download, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
 interface Template {
   id: string;
@@ -72,6 +73,7 @@ const templates: Template[] = [
 ];
 
 export const TemplateLibrary = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -86,8 +88,32 @@ export const TemplateLibrary = () => {
   });
 
   const useTemplate = (template: Template) => {
-    console.log('Using template:', template.name);
-    // Implementation for using template
+    toast({
+      title: "Template Applied",
+      description: `${template.name} has been loaded into the contract editor. Review highlighted sections for customization.`,
+    });
+    
+    // Simulate template loading with analysis
+    setTimeout(() => {
+      toast({
+        title: "AI Analysis Complete",
+        description: `Found ${template.highlightSections.length} sections requiring your attention.`,
+      });
+    }, 1500);
+  };
+
+  const downloadTemplate = (template: Template) => {
+    toast({
+      title: "Download Started",
+      description: `Downloading ${template.name} template...`,
+    });
+  };
+
+  const previewTemplate = (template: Template) => {
+    toast({
+      title: "Preview Loading",
+      description: `Opening preview for ${template.name}...`,
+    });
   };
 
   return (
@@ -202,20 +228,39 @@ export const TemplateLibrary = () => {
                 ))}
               </div>
             </div>
+
+            <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
+              <h6 className="text-sm font-medium text-blue-400 mb-2">AI Analysis</h6>
+              <p className="text-xs text-blue-300">
+                This template includes {selectedTemplate.highlightSections.length} sections that typically require customization. 
+                AI will automatically highlight areas needing your input and suggest improvements.
+              </p>
+            </div>
             
             <div className="pt-4 space-y-2">
               <Button 
                 className="w-full bg-green-600 hover:bg-green-700"
                 onClick={() => useTemplate(selectedTemplate)}
               >
+                <Plus className="w-4 h-4 mr-2" />
                 Use This Template
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 border-slate-600 text-slate-300">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-slate-600 text-slate-300"
+                  onClick={() => previewTemplate(selectedTemplate)}
+                >
                   <Eye className="w-4 h-4 mr-2" />
                   Preview
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 border-slate-600 text-slate-300">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-slate-600 text-slate-300"
+                  onClick={() => downloadTemplate(selectedTemplate)}
+                >
                   <Download className="w-4 h-4 mr-2" />
                   Download
                 </Button>
